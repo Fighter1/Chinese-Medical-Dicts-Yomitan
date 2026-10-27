@@ -19,9 +19,9 @@ jobs:
       # variable (and SOURCE_INPUTS_TOKEN secret) to keep the sources in a private repo.
       SOURCE_REPO: ${{ vars.SOURCE_REPO || github.repository }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
           cache: pip
@@ -62,7 +62,7 @@ jobs:
         id: prepare
         run: python .github/scripts/prepare_release.py --dist dist --output release | tee -a "$GITHUB_OUTPUT"
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: medical-yomitan-${{ github.sha }}
           path: release/

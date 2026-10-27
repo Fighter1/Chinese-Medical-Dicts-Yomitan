@@ -1,0 +1,15 @@
+version: 2
+updates:
+  # Opens a pull request when a new major of any action in .github/workflows appears.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels: [dependencies, github-actions]
+
+  # Converter dependencies listed in requirements.txt / pyproject.toml.
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    labels: [dependencies, python]
