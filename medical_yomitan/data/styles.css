@@ -1,0 +1,22 @@
+[data-sc-content="crfd-entry"] { font-family: sans-serif; line-height: 1.55; }
+[data-sc-content="first-row-parent"] { display: inline-flex; vertical-align: bottom; }
+[data-sc-content="terms-parent"] { display: inline-flex; }
+[data-sc-content="simplified-term"] { background: #111; border: 1px solid #454545; border-radius: 4px; color: #257de4; display: inline-block; font-size: 1.1em; line-height: 1; margin-right: 6px; padding: 4px; }
+[data-sc-content="header"] { background: color-mix(in srgb, currentColor 8%, transparent); border-radius: .35em; margin: .2em 0 .55em; padding: .35em .55em; }
+[data-sc-content="headword-full"] { font-weight: bold; margin-right: .8em; }
+[data-sc-content="english"] { font-style: italic; opacity: .8; }
+[data-sc-content="definition"] { margin: .35em 0; }
+[data-sc-content="paragraph"] { margin: .3em 0; }
+[data-sc-content="figure"] { margin: .5em 0; text-align: center; }
+[data-sc-content="entry-image"] { display: inline-block; margin: .3em auto; max-width: 100%; }
+[data-sc-content="inline-image"] { display: inline-block; max-width: 100%; vertical-align: middle; }
+[data-sc-content="glyph-image"] { display: inline-block; vertical-align: middle; }
+[data-sc-content="small"] { opacity: .85; }
+[data-sc-content="source"] { font-size: .8em; margin-top: .55em; opacity: .62; }
+[data-sc-content="referenced-definition"] { border-left: .18em solid color-mix(in srgb, currentColor 25%, transparent); margin: .5em 0 .4em .2em; padding-left: .6em; }
+[data-sc-content="referenced-label"] { font-size: .85em; font-weight: bold; opacity: .75; }
+[data-sc-content="private-use"] { border: 1px dashed color-mix(in srgb, currentColor 45%, transparent); border-radius: .2em; padding: 0 .15em; }
+[data-sc-content="pua-inferred"] { text-decoration: underline dotted; text-underline-offset: .14em; }
+[data-sc-content="crfd-entry"] a { color: #4f73a8; text-decoration: none; border-bottom: 1px dotted #4f73a8; }
+table { border-collapse: collapse; margin: .4em 0; max-width: 100%; }
+td, th { border: 1px solid color-mix(in srgb, currentColor 25%, transparent); padding: .2em .35em; vertical-align: top; }

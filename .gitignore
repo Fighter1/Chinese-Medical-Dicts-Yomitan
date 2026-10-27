@@ -1,0 +1,13 @@
+# Source dictionaries (copyrighted; supplied locally) and build outputs
+input/
+dist/
+*.mdx
+*.mdd
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+build/
+.venv/

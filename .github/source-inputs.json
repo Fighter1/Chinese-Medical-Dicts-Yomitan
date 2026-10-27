@@ -1,0 +1,33 @@
+{
+  "release_tag": "source-inputs-2026.10.27",
+  "files": [
+    {
+      "asset": "xiandai-yixue-cidian.mdx",
+      "dictionary": "xiandai-yixue-cidian",
+      "original_name": "现代医学辞典[1990][刘福岭][山东科学技术出版社].mdx",
+      "size": 3107696,
+      "sha256": "d76a12f312a206a904730306e9b13dcc97f8fd3b9abd9f9bf7f94020978d47d3"
+    },
+    {
+      "asset": "xiandai-yixue-cidian.mdd",
+      "dictionary": "xiandai-yixue-cidian",
+      "original_name": "现代医学辞典[1990][刘福岭][山东科学技术出版社].mdd",
+      "size": 1882001,
+      "sha256": "2ca4cdabd9eddf938a09bef44746b80c95e53dbc77db7f4f026c198fa04f0fc6"
+    },
+    {
+      "asset": "xinbian-shiyong-yixue-cidian.mdx",
+      "dictionary": "xinbian-shiyong-yixue-cidian",
+      "original_name": "新编实用医学词典[1994][张俊武][北京医科大学中国协和医科大学联合出版社].mdx",
+      "size": 5566530,
+      "sha256": "5e6f85647a6fc523663dc06ebdcf92e06d7057552a90b170f06db4dcbd8aaeb6"
+    },
+    {
+      "asset": "xinbian-shiyong-yixue-cidian.mdd",
+      "dictionary": "xinbian-shiyong-yixue-cidian",
+      "original_name": "新编实用医学词典[1994][张俊武][北京医科大学中国协和医科大学联合出版社].mdd",
+      "size": 1083485,
+      "sha256": "8e94b20059d96487861339e8724b8746ba14db6ff1f12c6e5b0fcba444f3672e"
+    }
+  ]
+}

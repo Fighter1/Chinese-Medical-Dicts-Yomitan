@@ -1,0 +1,7 @@
+fastjsonschema>=2.20
+jsonschema>=4.23
+lxml>=5.3
+mdict-utils>=1.3.14
+Pillow>=10.4
+pypinyin>=0.53
+pytest>=8.3

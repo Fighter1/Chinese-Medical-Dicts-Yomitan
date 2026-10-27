@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "medical-yomitan"
+version = "1.0.0"
+description = "Convert CRFD-style Chinese medical MDX dictionaries (现代医学辞典, 新编实用医学词典) to Yomitan"
+requires-python = ">=3.12"
+dependencies = [
+    "fastjsonschema>=2.20",
+    "jsonschema>=4.23",
+    "lxml>=5.3",
+    "mdict-utils>=1.3.14",
+    "Pillow>=10.4",
+    "pypinyin>=0.53",
+]
+
+[project.optional-dependencies]
+test = ["pytest>=8.3"]
+
+[tool.setuptools.packages.find]
+include = ["medical_yomitan*"]
+
+[tool.setuptools.package-data]
+medical_yomitan = ["schemas/*.json", "data/*.css"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
