@@ -42,7 +42,7 @@ DICTIONARIES: dict[str, Dictionary] = {
         description=(
             "《现代医学辞典》（刘福岭主编，山东科学技术出版社，1990）的结构化 Yomitan 转换。"
             "保留词头、英文对照、释义、公式与插图、表格、交叉引用和知识来源页码；"
-            "拼音读音由 pypinyin 自动生成。"
+            "词条可用简体或繁体（台湾、香港、OpenCC 标准字形）检索；拼音读音取自 CC-CEDICT，其余由 pypinyin 生成。"
         ),
     ),
     "xinbian-shiyong-yixue-cidian": Dictionary(
@@ -57,7 +57,7 @@ DICTIONARIES: dict[str, Dictionary] = {
         description=(
             "《新编实用医学词典》（张俊武主编，北京医科大学中国协和医科大学联合出版社，1994）"
             "的结构化 Yomitan 转换。保留词头、英文对照、释义、公式与插图、交叉引用和知识来源；"
-            "拼音读音由 pypinyin 自动生成。"
+            "词条可用简体或繁体（台湾、香港、OpenCC 标准字形）检索；拼音读音取自 CC-CEDICT，其余由 pypinyin 生成。"
         ),
     ),
 }

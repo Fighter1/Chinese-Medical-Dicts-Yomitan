@@ -29,6 +29,9 @@ def sha256_file(path: Path) -> str:
 
 
 def main() -> int:
+    for stream in (sys.stdout, sys.stderr):      # the file names are Chinese; a Windows console is not UTF-8
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     root = Path(__file__).resolve().parents[2]
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", default=str(root / "input"))

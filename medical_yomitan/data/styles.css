@@ -1,6 +1,7 @@
 [data-sc-content="crfd-entry"] { font-family: sans-serif; line-height: 1.55; }
 [data-sc-content="first-row-parent"] { display: inline-flex; vertical-align: bottom; }
 [data-sc-content="terms-parent"] { display: inline-flex; }
+[data-sc-content="traditional-term"] { background: #111; border: 1px solid #454545; border-radius: 4px; color: #e42566; display: inline-block; font-size: 1.1em; line-height: 1; margin-right: 6px; padding: 4px; }
 [data-sc-content="simplified-term"] { background: #111; border: 1px solid #454545; border-radius: 4px; color: #257de4; display: inline-block; font-size: 1.1em; line-height: 1; margin-right: 6px; padding: 4px; }
 [data-sc-content="header"] { background: color-mix(in srgb, currentColor 8%, transparent); border-radius: .35em; margin: .2em 0 .55em; padding: .35em .55em; }
 [data-sc-content="headword-full"] { font-weight: bold; margin-right: .8em; }

@@ -1,0 +1,138 @@
+# Golden words: what a build has to show for particular words.
+# `python -m medical_yomitan golden ARCHIVE` (and `validate`) checks every line and fails when one does not hold.
+#
+# headword <TAB> check <TAB> value <TAB> scope
+#   scope: xiandai-yixue-cidian, xinbian-shiyong-yixue-cidian, or empty for both dictionaries
+#   checks:
+#     present                 the headword is an entry of the dictionary
+#     absent                  nothing is filed under this term: no entry and no spelling of one
+#     reading VALUE           an entry of the headword has this reading
+#     indexed VALUE           an entry of the headword is also filed under this term (an alternate MDX key)
+#     traditional VALUE       the same check, for a traditional spelling
+#     traditional_box S=TEXT  found by the term S, the entry shows TEXT in its traditional box
+#                             (S is the headword itself or one of its spellings; nothing after =: no box)
+
+# -- Traditional spellings are Taiwan's (s2tw), shown in the box and indexed
+子宫	traditional	子宮
+子宫	traditional_box	子宫=子宮
+子宫	traditional_box	子宮=子宮
+综合征	traditional	綜合徵	xinbian-shiyong-yixue-cidian
+舌系带过短	traditional	舌繫帶過短	xiandai-yixue-cidian
+房间隔缺损	traditional	房間隔缺損
+
+# -- ... and an entry is also found under the Hong Kong (s2hk) and OpenCC (s2t) spelling. Found that way it
+#    shows the spelling after the Taiwan one; found by the headword or the Taiwan form it shows the Taiwan form only
+里急后重	traditional	裡急後重
+里急后重	traditional	裏急後重
+里急后重	traditional_box	里急后重=裡急後重
+里急后重	traditional_box	裡急後重=裡急後重
+里急后重	traditional_box	裏急後重=裡急後重、裏急後重
+腭	traditional	顎
+腭	traditional	齶
+腭	traditional_box	齶=顎、齶
+
+# -- A headword that is its own Taiwan form shows no box, but a lookup-only spelling still gets a row and shows itself
+便秘	traditional_box	便秘=
+便秘	traditional	便祕
+便秘	traditional_box	便祕=便祕
+人群免疫力	traditional_box	人羣免疫力=人羣免疫力
+
+# -- No traditional box and no extra row when nothing converts
+A型人格	traditional_box	A型人格=	xiandai-yixue-cidian
+大汗腺	traditional_box	大汗腺=
+心率	traditional_box	心率=	xinbian-shiyong-yixue-cidian
+
+# -- Alternate MDX keys (rows tagged variant) and their own converted spellings; the box only shows the headword's forms
+GM1神经节苷脂病	indexed	GM神经节苷脂病	xiandai-yixue-cidian
+GM1神经节苷脂病	indexed	GM神經節苷脂病	xiandai-yixue-cidian
+GM1神经节苷脂病	traditional_box	GM神经节苷脂病=GM1神經節苷脂病	xiandai-yixue-cidian
+GM1神经节苷脂病	traditional_box	GM神經節苷脂病=GM1神經節苷脂病	xiandai-yixue-cidian
+B1细胞	indexed	B细胞	xinbian-shiyong-yixue-cidian
+B1细胞	indexed	B細胞	xinbian-shiyong-yixue-cidian
+B1细胞	traditional_box	B細胞=B1細胞	xinbian-shiyong-yixue-cidian
+
+# -- Latin, Greek and digits pass through conversion and stay in place in the reading
+17-α-羟化酶缺失综合征	present
+17-α-羟化酶缺失综合征	traditional	17-α-羥化酶缺失綜合徵
+17-α-羟化酶缺失综合征	reading	17-α- qiǎng huà méi quē shī zōng hé zhēng
+5P综合征	traditional	5P綜合徵
+乙酰辅酶A	reading	yǐ xiān fǔ méi A	xinbian-shiyong-yixue-cidian
+乙酰辅酶A	traditional	乙酰輔酶A	xinbian-shiyong-yixue-cidian
+
+# -- A character restored from a private-use placeholder passes through as restored (OpenCC would write 噁 for 𫫇)
+磺胺异𫫇唑	traditional	磺胺異𫫇唑	xinbian-shiyong-yixue-cidian
+磺胺異噁唑	absent		xinbian-shiyong-yixue-cidian
+正中𬌗	reading	zhèng zhōng hé
+正中𬌗	traditional_box	正中𬌗=
+
+# -- Vocabulary is never swapped: these are what s2twp would have filed the entries under
+三羧酸循环	traditional	三羧酸循環
+三羧酸迴圈	absent
+醫學資訊處理	absent		xiandai-yixue-cidian
+医学信息处理	traditional	醫學信息處理	xiandai-yixue-cidian
+乙醯輔酶A	absent		xinbian-shiyong-yixue-cidian
+激光	traditional_box	激光=	xinbian-shiyong-yixue-cidian
+鐳射	absent
+DNA多型性	absent		xinbian-shiyong-yixue-cidian
+
+# -- Forms OpenCC gets wrong are corrected (data/traditional_corrections.tsv): 症 is not 癥, a transliterated
+#    范 or 里 keeps its character, 巨细胞 is not 鉅細胞, a surface is not flour, a clock is 鐘, dry is 乾.
+#    The wrong form is not filed at all, also not as a lookup-only spelling
+低张性低氧血症	traditional	低張性低氧血症
+低張性低氧血癥	absent
+低氧血症	traditional_box	低氧血症=
+低氧血癥	absent
+范可尼综合征	traditional	范可尼綜合徵
+範可尼綜合徵	absent
+克—里综合征	traditional	克—里綜合徵	xiandai-yixue-cidian
+巨细胞	traditional	巨細胞	xiandai-yixue-cidian
+鉅細胞	absent
+粗面内质网	traditional	粗面內質網	xiandai-yixue-cidian
+粗麵內質網	absent
+沙钟胃	traditional	沙鐘胃
+沙鍾胃	absent
+硫酸软骨素	traditional	硫酸軟骨素
+阿托品	traditional_box	阿托品=	xinbian-shiyong-yixue-cidian
+阿託品	absent
+太冲	traditional	太衝	xinbian-shiyong-yixue-cidian
+回复突变	traditional	回復突變	xiandai-yixue-cidian
+游离皮瓣	traditional	游離皮瓣	xinbian-shiyong-yixue-cidian
+
+# -- A correction holds in all three standards: the lookup-only spelling of 着色性干皮病 is 着色性乾皮病, not 着色性幹皮病
+着色性干皮病	traditional	著色性乾皮病
+着色性干皮病	traditional_box	着色性乾皮病=著色性乾皮病、着色性乾皮病
+着色性幹皮病	absent
+卫生发展管理程序	traditional_box	衞生發展管理程序=衛生發展管理程序、衞生發展管理程序	xiandai-yixue-cidian
+
+# -- ... and what OpenCC had right stays: flour is 麵, 钟情 is 鍾情, to swallow is 嚥, inside is 裡
+揉面感	traditional	揉麵感
+揉面感	traditional	揉麪感
+钟情妄想	traditional	鍾情妄想
+吞咽	traditional	吞嚥	xinbian-shiyong-yixue-cidian
+咽肌	traditional_box	咽肌=	xinbian-shiyong-yixue-cidian
+
+# -- Readings pypinyin alone got wrong, now from CC-CEDICT
+#    (子宫 zi gōng, 脊 jí, 椎 chuí, 肋 lē, 应 yīng)
+子宫	reading	zǐ gōng
+脊髓损伤	reading	jǐ suǐ sǔn shāng	xiandai-yixue-cidian
+颈椎病	reading	jǐng zhuī bìng
+肋间神经	reading	lèi jiān shén jīng
+心率	reading	xīn lǜ	xinbian-shiyong-yixue-cidian
+生长激素	reading	shēng zhǎng jī sù	xiandai-yixue-cidian
+变应原	reading	biàn yìng yuán	xinbian-shiyong-yixue-cidian
+
+# -- ... and from the overrides file (分子 fèn zǐ, 重吸收 zhòng, 咽 yàn, 大汗 dà hán, 长 zhǎng, 系带 jì dài,
+#    房间 fáng jiān, 恶寒 è hán, 粘膜 zhān mó, 寰椎 huán chuí)
+分子毒理学	reading	fēn zǐ dú lǐ xué
+重吸收	reading	chóng xī shōu	xiandai-yixue-cidian
+咽	reading	yān
+大汗腺	reading	dà hàn xiàn
+拇长屈肌	reading	mǔ cháng qū jī	xinbian-shiyong-yixue-cidian
+舌系带过短	reading	shé xì dài guò duǎn	xiandai-yixue-cidian
+房间隔缺损	reading	fáng jiàn gé quē sǔn
+恶寒战栗	reading	wù hán zhàn lì	xinbian-shiyong-yixue-cidian
+粘膜	reading	nián mó
+寰椎	reading	huán zhuī	xiandai-yixue-cidian
+
+# -- The section markers of the sources (letters, digits, pinyin syllables without a definition) are not entries
+biàn	absent		xiandai-yixue-cidian

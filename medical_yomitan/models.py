@@ -25,6 +25,8 @@ class ParsedEntry:
     reference_target: str = ""
     reference_suffix: str = ""
     alternate_terms: list[str] = field(default_factory=list)
+    # Han characters of the headword that were restored from private-use placeholders.
+    restored: str = ""
 
 
 @dataclass

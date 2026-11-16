@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import datetime as dt
 import hashlib
 import json
 import os
@@ -11,12 +10,16 @@ from pathlib import Path
 from typing import Any
 
 from . import __version__
+from .cedict import ATTRIBUTION as CEDICT_ATTRIBUTION
 from .content import parse_record, reference_link, render_glossary
 from .dictionaries import REPO_URL, Dictionary
 from .models import ConversionStats, InputSet, ParsedEntry
 from .package import TermBankWriter, deterministic_zip, write_json
+from .readings import default_readings
+from .release import check_revision, local_revision
 from .resources import ResourceCatalog
 from .source import input_inventory, iter_mdx_records
+from .traditional import LOOKUP_CONFIGS, SHOWN_CONFIG, Traditional, with_own_spelling
 
 
 REFERENCE_MAX_HOPS = 8
@@ -35,7 +38,9 @@ def _signature(entry: list[Any]) -> bytes:
 
 
 def default_revision() -> str:
-    return os.environ.get("MEDICAL_YOMITAN_REVISION", dt.date.today().strftime("%Y.%m.%d") + ".1")
+    """$MEDICAL_YOMITAN_REVISION, else the UTC date with ".0": a build nobody gave a
+    revision never outranks a release of the same day (those end in 1 or more)."""
+    return os.environ.get("MEDICAL_YOMITAN_REVISION") or local_revision()
 
 
 class ReferenceResolver:
@@ -90,7 +95,7 @@ def build_dictionary(
     stats = ConversionStats()
     output = output.resolve()
     report_path = output.with_name(dictionary.report)
-    revision = revision or default_revision()
+    revision = check_revision(revision or default_revision())
     styles = styles or Path(__file__).parent / "data" / "styles.css"
 
     with tempfile.TemporaryDirectory(prefix="medical-yomitan-") as temporary:
@@ -143,14 +148,48 @@ def build_dictionary(
             bank.add(row)
             stats.counters["emitted_terms"] += 1
 
+        to_traditional = Traditional()
         for index, entry in enumerate(entries):
-            glossary = render_glossary(entry, bodies[index], embedded[index])
+            # Row order per entry (validation and the golden-word check read it):
+            # the headword, its Taiwan form, its lookup-only spellings, then each
+            # alternate MDX key followed by that key's own converted spellings.
+            taiwan, lookup_only = to_traditional.spellings(entry.expression, entry.restored)
+            glossary = render_glossary(entry, bodies[index], embedded[index], taiwan)
+            emitted = {entry.expression}
+
+            def emit_once(term: str, own_glossary: list[Any], counter: str, tags: str = "") -> None:
+                if term in emitted:
+                    return
+                emitted.add(term)
+                before = stats.counters["emitted_terms"]
+                emit(_term_row(term, entry.reading, own_glossary, entry.ordinal, tags))
+                stats.counters[counter] += stats.counters["emitted_terms"] - before
+
             emit(_term_row(entry.expression, entry.reading, glossary, entry.ordinal))
+            if taiwan:
+                emit_once(taiwan, glossary, "traditional_terms")
+                stats.counters["entries_with_traditional_form"] += 1
+            for spelling in lookup_only:
+                if spelling in expressions:
+                    # found as that headword already
+                    stats.counters["lookup_spellings_that_are_headwords"] += 1
+                    continue
+                emit_once(spelling, with_own_spelling(glossary, taiwan, spelling), "lookup_only_terms")
             for alternate in entry.alternate_terms:
                 if alternate in expressions:
                     continue  # the MDX key already exists as a displayed headword
-                emit(_term_row(alternate, entry.reading, glossary, entry.ordinal, "variant"))
-                stats.counters["variant_terms"] += 1
+                emit_once(alternate, glossary, "variant_terms", "variant")
+                # The key's own converted spellings keep the tag. The box only ever
+                # shows forms of the displayed headword, so the glossary is unchanged.
+                key_taiwan, key_lookup_only = to_traditional.spellings(alternate, entry.restored)
+                for spelling, counter in [(key_taiwan, "variant_traditional_terms"),
+                                          *((form, "variant_lookup_only_terms") for form in key_lookup_only)]:
+                    if not spelling:
+                        continue
+                    if spelling in expressions:
+                        stats.counters["lookup_spellings_that_are_headwords"] += 1
+                        continue
+                    emit_once(spelling, glossary, counter, "variant")
         bank.close()
 
         index = {
@@ -166,6 +205,7 @@ def build_dictionary(
             "description": dictionary.description,
             "attribution": (
                 "原书版权归原作者与出版社所有；本转换仅供个人学习研究使用，转换器不授予任何再分发权利。"
+                f" {CEDICT_ATTRIBUTION}"
                 f" Converter medical_yomitan {__version__}; source MDX sha256 {mdx_sha[:12]}."
             ),
             "sourceLanguage": "zh",
@@ -175,7 +215,8 @@ def build_dictionary(
         (stage / "tag_bank_1.json").write_text(
             json.dumps(TERM_TAGS, ensure_ascii=False) + "\n", encoding="utf-8"
         )
-        (stage / "styles.css").write_bytes(styles.read_bytes())
+        # LF whatever the checkout's line endings are, so the ZIP is the same on every machine
+        (stage / "styles.css").write_bytes(styles.read_bytes().replace(b"\r\n", b"\n"))
 
         package_files: list[tuple[str, Path | bytes]] = [(file.name, file) for file in stage.iterdir()]
         for resource in sorted(resources.used_outputs):
@@ -192,6 +233,24 @@ def build_dictionary(
                 "path": str(output), "size": output.stat().st_size, "sha256": output_sha,
                 "term_banks": bank.bank_number, "terms": bank.total,
                 "images": len(resources.used_outputs),
+            },
+            # One line per kind of row; they add up to output.terms.
+            "rows": {
+                "entries": len(entries),
+                "variant": stats.counters["variant_terms"],
+                "traditional": stats.counters["traditional_terms"] + stats.counters["variant_traditional_terms"],
+                "lookup_only": stats.counters["lookup_only_terms"] + stats.counters["variant_lookup_only_terms"],
+            },
+            "traditional": {
+                "shown": SHOWN_CONFIG, "lookup_only": list(LOOKUP_CONFIGS), "package": "opencc-python-reimplemented",
+                # lines of data/traditional_corrections.tsv and the number of terms each was applied to
+                "corrections": {phrase: len(terms) for phrase, terms in sorted(to_traditional.corrected.items())},
+            },
+            "readings": {
+                "sources": {key.removeprefix("reading:"): value for key, value in sorted(stats.counters.items())
+                            if key.startswith("reading:")},
+                "cedict_export_date": default_readings().cedict_date,
+                "overrides": len(default_readings().overrides),
             },
             "counts": dict(sorted(stats.counters.items())),
             "unknown_tags": dict(stats.unknown_tags.most_common()),
