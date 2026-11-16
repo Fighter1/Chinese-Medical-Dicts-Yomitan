@@ -71,9 +71,37 @@ def cmd_build(args: argparse.Namespace) -> int:
 def cmd_validate(args: argparse.Namespace) -> int:
     from .validation import validate_archive
 
-    result = validate_archive(Path(args.archive), schema=not args.no_schema)
+    result = validate_archive(Path(args.archive), schema=not args.no_schema, golden=not args.no_golden,
+                              revision=args.revision)
     print(json.dumps(result, ensure_ascii=False, indent=2))
     return 0 if result["ok"] else 1
+
+
+def cmd_golden(args: argparse.Namespace) -> int:
+    from .golden import check_archive, load_golden
+
+    golden = load_golden(Path(args.golden)) if args.golden else None
+    failed = 0
+    for archive in args.archives:
+        result = check_archive(Path(archive), golden)
+        held = result["checks"] - len(result["failures"])
+        print(f"{archive} ({result['scope'] or 'unknown dictionary'}): {held} of {result['checks']} golden checks hold")
+        for failure in result["failures"]:
+            print("  FAILED  " + failure)
+        failed += len(result["failures"])
+    return 1 if failed else 0
+
+
+def cmd_cedict_refresh(args: argparse.Namespace) -> int:
+    from . import cedict
+
+    before = cedict.load_table() if cedict.TABLE_PATH.exists() else None
+    table = cedict.refresh(args.source)
+    print(f"{cedict.TABLE_PATH}: export of {table.export_date}, {table.export_entries:,} entries, "
+          f"{len(table.readings):,} headwords"
+          + (f" (was the export of {before.export_date}, {len(before.readings):,} headwords)" if before else ""))
+    print("Rebuild, then run the tests and `golden`: a new export can change readings.")
+    return 0
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -96,13 +124,24 @@ def main(argv: list[str] | None = None) -> int:
     add_inputs(p)
     p.add_argument("--dictionary", choices=sorted(DICTIONARIES), help="Which dictionary identity to use (auto-detected if omitted)")
     p.add_argument("--output", help="Output ZIP path (default: dist/<archive name>)")
-    p.add_argument("--revision", help="Dictionary revision (default: today's date + .1, or $MEDICAL_YOMITAN_REVISION)")
+    p.add_argument("--revision", help="Dictionary revision, four dot-separated integers (default: $MEDICAL_YOMITAN_REVISION, else the UTC date + .0)")
     p.set_defaults(func=cmd_build)
 
     p = sub.add_parser("validate", help="Validate a built ZIP")
     p.add_argument("archive")
     p.add_argument("--no-schema", action="store_true", help="Skip JSON-schema validation of term banks")
+    p.add_argument("--no-golden", action="store_true", help="Skip the golden-word checks")
+    p.add_argument("--revision", help="Fail unless index.json carries exactly this revision")
     p.set_defaults(func=cmd_validate)
+
+    p = sub.add_parser("golden", help="Check built ZIPs against data/golden_words.tsv")
+    p.add_argument("archives", nargs="+")
+    p.add_argument("--golden", help="Another golden-words file")
+    p.set_defaults(func=cmd_golden)
+
+    p = sub.add_parser("cedict-refresh", help="Rewrite the pinned CC-CEDICT readings table from the current MDBG export")
+    p.add_argument("--source", help="A local copy of the export (.txt or .txt.gz) to derive the table from, without downloading")
+    p.set_defaults(func=cmd_cedict_refresh)
 
     args = parser.parse_args(argv)
     return args.func(args)

@@ -15,6 +15,7 @@ except ImportError:  # pragma: no cover - optional dependency
     fastjsonschema = None
 
 from .content import ENTRY_KIND
+from .release import REVISION_SHAPE
 from .readings import is_clean_reading
 
 
@@ -35,7 +36,11 @@ def _walk(value: Any):
             yield from _walk(item)
 
 
-def validate_archive(path: Path, *, schema: bool = True) -> dict[str, Any]:
+def validate_archive(
+    path: Path, *, schema: bool = True, golden: bool = True, revision: str | None = None,
+) -> dict[str, Any]:
+    """Archive-wide checks. ``golden`` also runs the golden-word checks (golden.py);
+    ``revision``, when given, is what index.json has to carry."""
     problems: list[str] = []
     counts = {"terms": 0, "banks": 0, "images": 0, "image_references": 0}
     with zipfile.ZipFile(path) as archive:
@@ -103,10 +108,23 @@ def validate_archive(path: Path, *, schema: bool = True) -> dict[str, Any]:
                             counts["image_references"] += 1
                             if node.get("path") not in names:
                                 problems.append(f"{name}: missing image {node.get('path')} in {expression!r}")
+                        if node.get("data", {}).get("content") == "traditional-term" and node.get("lang") != "zh-TW":
+                            problems.append(f"{name}: traditional box without lang zh-TW in {expression!r}")
                         if tag == "a" and not str(node.get("href", "")).startswith("?query="):
                             problems.append(f"{name}: unexpected link {node.get('href')} in {expression!r}")
                 if len(problems) > 200:
                     break
         counts["terms_with_readings"] = readings_seen
-    return {"archive": str(path), "title": index.get("title"), "revision": index.get("revision"),
-            "counts": counts, "problems": problems[:200], "ok": not problems}
+    if not REVISION_SHAPE.fullmatch(str(index.get("revision", ""))):
+        problems.append(f"revision {index.get('revision')!r} is not four dot-separated integers; "
+                        "Yomitan would not compare it numerically")
+    if revision is not None and index.get("revision") != revision:
+        problems.append(f"revision is {index.get('revision')!r}, expected {revision!r}")
+    result = {"archive": str(path), "title": index.get("title"), "revision": index.get("revision"),
+              "counts": counts, "problems": problems[:200]}
+    if golden:
+        from .golden import check_archive
+
+        result["golden"] = check_archive(path)
+    result["ok"] = not problems and not (golden and result["golden"]["failures"])
+    return result

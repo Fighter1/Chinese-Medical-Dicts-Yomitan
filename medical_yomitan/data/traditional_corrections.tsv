@@ -1,0 +1,89 @@
+# Traditional forms that OpenCC gets wrong for medical terms, corrected after the conversion.
+# One per line: simplified phrase<TAB>its traditional form as Taiwan writes it (the same number of characters).
+#
+# Wherever the phrase occurs in a headword (or an alternate key), the characters in which this form differs
+# from what OpenCC writes for the phrase replace OpenCC's, in the Taiwan form and in the Hong Kong and OpenCC
+# spellings alike; the other characters of the phrase keep each standard's own form (衛 / 衞). So a corrected
+# character must be one all three standards write the same way. A phrase has to be long enough to contain
+# what misleads OpenCC: a line that OpenCC already converts as stated is refused when the table is loaded.
+# This is for words read as another word. It is not for a character two standards write differently.
+# `python -m medical_yomitan golden` keeps the important ones checked.
+
+# -- 症 (zhèng, a disease) is not 癥 (zhēng, a lump in the abdomen): OpenCC reads 血症 as the 中医 term 血癥
+血症	血症
+
+# -- Transliterated names and acupuncture points keep the character: 里 is not 裡, 范 not 範, 朴 not 樸, 托 not 託
+克—里	克—里
+卡罗里	卡羅里
+里希特	里希特
+里瓦塔	里瓦塔
+里脱	里脫
+里顿	里頓
+建里	建里
+通里	通里
+范可尼	范可尼
+阿朴	阿朴
+托德	托德
+托贝	托貝
+托品	托品
+尔托	爾托
+碘托酸	碘托酸
+基托	基托
+
+# -- 面 (a surface) is not 麵 (flour); 揉面感 and 臭米面 are flour and stay 麵
+粗面	粗面
+液面	液面
+
+# -- 钟 (a bell, a clock) is 鐘; 鍾 is the one of 钟情
+救生钟	救生鐘
+沙钟	沙鐘
+分泌钟	分泌鐘
+
+# -- 发 (to come out, to develop) is 發; OpenCC sees the words 发型, 生发, 染发, 齿发, 肤发
+卫生发展	衛生發展
+迟发型	遲發型
+频发型	頻發型
+感染发热	感染發熱
+牙齿发育	牙齒發育
+皮肤发红	皮膚發紅
+
+# -- 后 (behind) is 後; 后 is a queen
+球后	球後
+后角	後角
+
+# -- 干 (dry) is 乾; 幹 is a trunk or a stem
+冻干	凍乾
+干槽	乾槽
+干罗音	乾羅音
+热干风	熱乾風
+干化	乾化
+干皮病	乾皮病
+干板	乾板
+干烤	乾烤
+
+# -- 脏 (an organ) is 臟; 髒 is dirty
+除脏	除臟
+脏支	臟支
+
+# -- 咽 (the pharynx) stays 咽; 嚥 is to swallow, as in 吞嚥
+咽下缩肌	咽下縮肌
+咽肌	咽肌
+
+# -- 酸 (an acid) stays 酸; 痠 is an ache, as in 痠痛
+酸软	酸軟
+眼酸性	眼酸性
+
+# -- Other words read as another word
+巨细胞	巨細胞
+视杆	視桿
+附加注射	附加注射
+点采	點采
+太冲	太衝
+调制	調制
+抑制酸性	抑制酸性
+回复	回復
+电复律	電復律
+扼扎	扼紮
+丰度	豐度
+游离	游離
+游走	游走

@@ -1,0 +1,81 @@
+name: Build and check
+
+# Every push to main and every pull request: run the tests, build both dictionaries from the pinned
+# source inputs, validate them against Yomitan's schemas and check the golden words. Publishes
+# nothing; the ZIPs are kept as a workflow artifact for a week. Releases come from the manually
+# started "Build and release" workflow.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      PYTHONUTF8: "1"
+      # Where the pinned source MDX/MDD pre-release lives. Override with a repository variable (and
+      # the SOURCE_INPUTS_TOKEN secret) to keep the sources in a private repository.
+      SOURCE_REPO: ${{ vars.SOURCE_REPO || github.repository }}
+    defaults:
+      run:
+        # Naming the shell makes Actions run it as `bash -eo pipefail`.
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: python -m pip install -r requirements.txt
+
+      - name: Unit tests
+        # Before anything is downloaded; the tests that read a built ZIP are skipped here.
+        run: python -m pytest
+
+      - name: Fetch the pinned source inputs (verifies size and SHA-256)
+        env:
+          GH_TOKEN: ${{ secrets.SOURCE_INPUTS_TOKEN || github.token }}
+        run: python .github/scripts/fetch_inputs.py --repo "$SOURCE_REPO"
+
+      - name: Build
+        # No revision: the build stamps the UTC date with ".0", below any release of that day.
+        run: |
+          python -m medical_yomitan build --input input/xiandai-yixue-cidian
+          python -m medical_yomitan build --input input/xinbian-shiyong-yixue-cidian
+
+      - name: Validate
+        run: |
+          python -m medical_yomitan validate dist/xiandai-yixue-cidian-yomitan.zip
+          python -m medical_yomitan validate dist/xinbian-shiyong-yixue-cidian-yomitan.zip
+
+      - name: Golden words
+        # validate runs them too; on their own the failed lines are easier to find in the log.
+        run: python -m medical_yomitan golden dist/xiandai-yixue-cidian-yomitan.zip dist/xinbian-shiyong-yixue-cidian-yomitan.zip
+
+      - name: Tests against the built ZIPs
+        run: python -m pytest
+
+      - name: Upload the ZIPs
+        uses: actions/upload-artifact@v7
+        with:
+          name: dictionaries-${{ github.sha }}
+          retention-days: 7
+          if-no-files-found: error
+          path: |
+            dist/*-yomitan.zip
+            dist/*-conversion-report.json

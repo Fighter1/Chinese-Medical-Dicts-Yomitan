@@ -12,6 +12,7 @@ dependencies = [
     "jsonschema>=4.23",
     "lxml>=5.3",
     "mdict-utils>=1.3.14",
+    "opencc-python-reimplemented>=0.1.7",
     "Pillow>=10.4",
     "pypinyin>=0.53",
 ]
@@ -23,7 +24,7 @@ test = ["pytest>=8.3"]
 include = ["medical_yomitan*"]
 
 [tool.setuptools.package-data]
-medical_yomitan = ["schemas/*.json", "data/*.css"]
+medical_yomitan = ["schemas/*.json", "data/*.css", "data/*.tsv"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

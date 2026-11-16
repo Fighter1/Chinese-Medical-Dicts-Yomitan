@@ -26,8 +26,9 @@ from urllib.parse import quote as urlquote
 from lxml import etree, html
 
 from .models import ConversionStats, ParsedEntry
-from .readings import reading_for
+from .readings import default_readings, reading_for
 from .resources import ResourceCatalog
+from .traditional import traditional_box
 
 
 ENTRY_KIND = "crfd-entry"
@@ -127,9 +128,23 @@ def _text_without_sup(el: etree._Element | None) -> str:
     return normalize_text("".join(clone.itertext()))
 
 
-def form_row(expression: str) -> dict[str, Any]:
-    badge = _container("span", expression, "simplified-term")
-    return _container("span", [_container("span", [badge], "terms-parent")], "first-row-parent")
+def form_row(expression: str, traditional: str = "") -> dict[str, Any]:
+    """The badge row: the Taiwan form (when it differs from the headword) to the
+    left of the simplified headword."""
+    badges: list[Any] = [traditional_box(traditional)] if traditional and traditional != expression else []
+    badges.append(_container("span", expression, "simplified-term"))
+    return _container("span", [_container("span", badges, "terms-parent")], "first-row-parent")
+
+
+def restored_characters(*sources: str) -> str:
+    """The Han characters PUA_MAP puts in place of the private-use code points
+    found in ``sources`` (raw text, before restoration)."""
+    found: list[str] = []
+    for codepoint, replacement in PUA_MAP.items():
+        if len(replacement) == 1 and ord(replacement) > 0x2E7F and replacement not in found:
+            if any(chr(codepoint) in text for text in sources):
+                found.append(replacement)
+    return "".join(sorted(found))
 
 
 class StructuredConverter:
@@ -294,7 +309,10 @@ def parse_record(
     ordinal: int, headword: str, raw: str, resources: ResourceCatalog | None, stats: ConversionStats,
 ) -> ParsedEntry | None:
     """Parse one MDX record; ``None`` means the record is an empty section marker."""
-    raw = restore_private_use(raw.replace("\x00", ""))
+    raw = raw.replace("\x00", "")
+    heading_source = re.search(r"<h3.*?</h3>", raw, re.S)
+    restored = restored_characters(headword, heading_source.group(0) if heading_source else "")
+    raw = restore_private_use(raw)
     key = plain_key(headword)
     converter = StructuredConverter(resources, stats, key)
     try:
@@ -357,7 +375,10 @@ def parse_record(
         body = ["（无可显示释义）"]
         stats.counters["empty_glossaries"] += 1
 
-    entry = ParsedEntry(ordinal, expression, reading_for(expression), key, header=header, body=body, source=source)
+    read = default_readings()(expression)
+    stats.counters[f"reading:{read.source}"] += 1
+    entry = ParsedEntry(ordinal, expression, read.reading, key, header=header, body=body, source=source)
+    entry.restored = "".join(ch for ch in restored if ch in expression or ch in key)
     if key and key != expression:
         entry.alternate_terms.append(key)
     if reference := _detect_reference(body):
@@ -392,8 +413,11 @@ def reference_link(entry: ParsedEntry) -> list[Any]:
     return result
 
 
-def render_glossary(entry: ParsedEntry, body: list[Any], embedded: list[tuple[ParsedEntry, list[Any]]]) -> list[dict[str, Any]]:
-    content: list[Any] = [form_row(entry.expression)]
+def render_glossary(
+    entry: ParsedEntry, body: list[Any], embedded: list[tuple[ParsedEntry, list[Any]]], traditional: str = "",
+) -> list[dict[str, Any]]:
+    """``traditional``: the Taiwan form of the headword, shown in its own box when it differs."""
+    content: list[Any] = [form_row(entry.expression, traditional)]
     if entry.header:
         content.append(_container("div", deepcopy(entry.header), "header"))
     content.append(_container("div", deepcopy(body), "definition"))

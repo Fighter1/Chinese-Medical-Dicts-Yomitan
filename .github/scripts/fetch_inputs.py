@@ -26,6 +26,9 @@ def sha256_file(path: Path) -> str:
 
 
 def main() -> int:
+    for stream in (sys.stdout, sys.stderr):      # the file names are Chinese; a Windows console is not UTF-8
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     parser = argparse.ArgumentParser()
     parser.add_argument("--repo", default=os.environ.get("SOURCE_REPO") or os.environ.get("GITHUB_REPOSITORY", ""))
     parser.add_argument("--manifest", default=".github/source-inputs.json")

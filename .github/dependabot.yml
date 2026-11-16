@@ -1,15 +1,24 @@
 version: 2
-updates:
-  # Opens a pull request when a new major of any action in .github/workflows appears.
-  - package-ecosystem: github-actions
-    directory: /
-    schedule:
-      interval: weekly
-    labels: [dependencies, github-actions]
 
-  # Converter dependencies listed in requirements.txt / pyproject.toml.
+# Weekly. requirements.txt pins exact versions, so every new release of a dependency is something
+# Dependabot can raise. Minor and patch updates of an ecosystem arrive as one pull request; each
+# major gets its own, so a breaking one cannot hold the rest back. "Build and check" builds and
+# validates both dictionaries and checks the golden words on each of them.
+updates:
   - package-ecosystem: pip
     directory: /
     schedule:
       interval: weekly
     labels: [dependencies, python]
+    groups:
+      python-minor-patch:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    labels: [dependencies, github-actions]
+    groups:
+      actions-minor-patch:
+        update-types: [minor, patch]

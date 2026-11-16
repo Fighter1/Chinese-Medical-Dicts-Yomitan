@@ -1,0 +1,155 @@
+# Hand-checked readings that win over every other source.
+# One per line: term<TAB>reading (lower-case, tone marks, one syllable per Han character, separated by spaces).
+#
+# A line applies to the headword it names and, when the term is two or more Han characters, to every
+# longer headword that contains it (重吸收 also fixes 肾小管重吸收作用). A one-character line is weaker:
+# it is the reading of that character wherever no word covers it, i.e. it replaces pypinyin's default.
+#
+# Add a term here when CC-CEDICT does not list it, or lists a reading that is wrong in medicine, and the
+# result is misread. `python -m medical_yomitan golden` keeps the important ones checked.
+
+# -- Characters whose usual reading in medical terms is not pypinyin's default
+子	zǐ
+椎	zhuī
+咽	yān
+切	qiē
+着	zhuó
+俞	shù
+应	yìng
+勒	lè
+差	chā
+创	chuāng
+吗	mǎ
+什	shí
+还	huán
+调	tiáo
+杆	gǎn
+佛	fó
+龈	yín
+长	cháng
+相	xiàng
+粘	nián
+塞	sài
+
+# -- 重 chóng (again, double), not zhòng (heavy)
+重吸收	chóng xī shōu
+重分布	chóng fēn bù
+重搏	chóng bó
+重氮	chóng dàn
+重言	chóng yán
+
+# -- Other words pypinyin or a wrong word boundary misreads
+促长	cù zhǎng
+恶寒	wù hán
+捻发	niǎn fà
+薄束	bó shù
+股薄肌	gǔ bó jī
+藏茵陈	zàng yīn chén
+间变	jiàn biàn
+量热	liáng rè
+猝倒	cù dǎo
+划足	huá zú
+划纹	huá wén
+淋菌	lìn jūn
+环缝术	huán féng shù
+弹响	tán xiǎng
+弹指	tán zhǐ
+搔弹音	sāo tán yīn
+剧吐	jù tù
+镇吐	zhèn tù
+晕动	yùn dòng
+抗晕	kàng yùn
+均称	jūn chèn
+不称	bù chèn
+没食子	mò shí zǐ
+咯萘啶	luò nài dìng
+常咯啉	cháng luò lín
+青阳参	qīng yáng shēn
+铺壁	pū bì
+栅比	shān bǐ
+扼扎	è zā
+蛇床子	shé chuáng zǐ
+粘连	zhān lián
+粘固	zhān gù
+脑干	nǎo gàn
+干性	gān xìng
+干槽	gān cáo
+干眼	gān yǎn
+干罗音	gān luó yīn
+干化	gān huà
+干皮病	gān pí bìng
+干板	gān bǎn
+干烤	gān kǎo
+干热	gān rè
+热干风机	rè gān fēng jī
+传导	chuán dǎo
+发音	fā yīn
+发根	fà gēn
+高差	gāo chā
+间隙	jiàn xì
+少年	shào nián
+剥脱	bō tuō
+
+# -- CC-CEDICT lists two readings and the everyday one is not the medical one
+分子	fēn zǐ
+大汗	dà hàn
+倾倒	qīng dào
+频数	pín shù
+神曲	shén qū
+血晕	xuè yùn
+
+# -- CC-CEDICT words that are right in everyday speech and wrong inside a medical term: a neutral tone
+#    (包涵 bāo han, 太阳 tài yang, 栓子 shuān zi), or a word across a boundary (性子 in 功能失调性子宫出血,
+#    生分 in 叉生分析). An override is placed before CC-CEDICT's words, so 子宫 here keeps 性子 out.
+子宫	zǐ gōng
+心脏	xīn zàng
+房间隔	fáng jiàn gé
+玻璃体	bō lí tǐ
+流量计	liú liàng jì
+切除	qiē chú
+调制	tiáo zhì
+分泌	fēn mì
+倒睫	dào jié
+分析	fēn xī
+包涵	bāo hán
+太阳	tài yáng
+密码子	mì mǎ zǐ
+栓子	shuān zǐ
+担子	dàn zǐ
+鸦胆子	yā dǎn zǐ
+旋花子	xuán huā zǐ
+乌拉米	wū lā mǐ
+木犀	mù xī
+
+# -- 塞: sài in transliterated names (the one-character line above), but
+胎粪塞	tāi fèn sāi
+塞物	sāi wù
+压塞	yā sè
+
+# -- 相 xiàng (phase) where pypinyin sees 相对 or reads xiāng
+三相	sān xiàng
+位相	wèi xiàng
+同相	tóng xiàng
+
+# -- 散 sǎn (a powder) at the end of a preparation's name
+二氯散	èr lǜ sǎn
+咳散	ké sǎn
+癌散	ái sǎn
+碘散	diǎn sǎn
+
+# -- Acupuncture points and channels
+少冲	shào chōng
+少泽	shào zé
+少海	shào hǎi
+少阳	shào yáng
+少阴	shào yīn
+曲池	qū chí
+曲泉	qū quán
+曲泽	qū zé
+太冲	tài chōng
+腰俞	yāo shù
+攒竹	cuán zhú
+巨阙	jù què
+
+# -- Transliterated names
+柏—查综合征	bó chá zōng hé zhēng

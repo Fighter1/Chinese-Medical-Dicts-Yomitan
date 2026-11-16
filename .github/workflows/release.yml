@@ -1,0 +1,171 @@
+name: Build and release
+
+# Manual: build both dictionaries from the pinned source inputs, validate them and publish them as
+# the latest GitHub release, so Yomitan's "Check for updates" picks them up. The revision in every
+# index.json and the release tag are the same value: UTC date + run number unless one is given.
+#
+# Two jobs. "build" installs the dependencies and runs the converter with a read-only token and
+# hands the assets over as an artifact. Only "publish", which runs nothing but gh, can write to the
+# repository.
+
+on:
+  workflow_dispatch:
+    inputs:
+      publish:
+        description: "Publish a GitHub release (off: build only, the assets are kept as a workflow artifact)"
+        type: boolean
+        default: true
+      revision:
+        description: "index.json revision, four dot-separated integers (default: UTC date + run number, e.g. 2026.11.16.3)"
+        type: string
+        default: ""
+
+permissions: {}
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      PYTHONUTF8: "1"
+      SOURCE_REPO: ${{ vars.SOURCE_REPO || github.repository }}
+    defaults:
+      run:
+        # Naming the shell makes Actions run it as `bash -eo pipefail`.
+        shell: bash
+    outputs:
+      revision: ${{ steps.revision.outputs.revision }}
+    steps:
+      - name: Releases are published from the default branch
+        if: ${{ inputs.publish && github.ref_name != github.event.repository.default_branch }}
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          echo "::error::run this workflow on $DEFAULT_BRANCH, or turn 'publish' off for a build-only run"
+          exit 1
+
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: python -m pip install -r requirements.txt
+
+      # Before anything is downloaded or built: a revision that cannot be released stops the run in
+      # its first minute. The script refuses a revision that is not four integers, one whose release
+      # or tag exists, and one that is not greater than the revision in the latest release's
+      # index-<slug>.json assets.
+      - name: Choose the revision
+        id: revision
+        env:
+          GH_TOKEN: ${{ github.token }}
+          # Passed through the environment, never pasted into the script text.
+          INPUT_REVISION: ${{ inputs.revision }}
+        run: python .github/scripts/choose_revision.py
+
+      - name: Unit tests
+        run: python -m pytest
+
+      - name: Fetch the pinned source inputs (verifies size and SHA-256)
+        env:
+          GH_TOKEN: ${{ secrets.SOURCE_INPUTS_TOKEN || github.token }}
+        run: python .github/scripts/fetch_inputs.py --repo "$SOURCE_REPO"
+
+      - name: Build
+        env:
+          MEDICAL_YOMITAN_REVISION: ${{ steps.revision.outputs.revision }}
+        run: |
+          python -m medical_yomitan build --input input/xiandai-yixue-cidian
+          python -m medical_yomitan build --input input/xinbian-shiyong-yixue-cidian
+
+      - name: Validate
+        run: |
+          python -m medical_yomitan validate dist/xiandai-yixue-cidian-yomitan.zip --revision "$REVISION"
+          python -m medical_yomitan validate dist/xinbian-shiyong-yixue-cidian-yomitan.zip --revision "$REVISION"
+
+      - name: Golden words
+        run: python -m medical_yomitan golden dist/xiandai-yixue-cidian-yomitan.zip dist/xinbian-shiyong-yixue-cidian-yomitan.zip
+
+      - name: Tests against the built ZIPs
+        run: python -m pytest
+
+      - name: Assemble the assets and write the release notes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # The latest release, for the "Changes since" section. Without one (or when it cannot be
+          # read) the notes simply have no such section.
+          gh release view --repo "$GITHUB_REPOSITORY" --json tagName,body > "$RUNNER_TEMP/previous.json" 2> /dev/null ||
+            echo '{}' > "$RUNNER_TEMP/previous.json"
+          previous_tag="$(python -c 'import json, sys; print(json.load(open(sys.argv[1], encoding="utf-8")).get("tagName") or "")' "$RUNNER_TEMP/previous.json")"
+          # The commits since that release, from the API: the checkout has no history. A failed or
+          # truncated answer leaves no file, and the notes then leave the commits out, which is not
+          # the same as saying there were none.
+          if [ -n "$previous_tag" ]; then
+            gh api "repos/$GITHUB_REPOSITORY/compare/$previous_tag...$GITHUB_SHA" \
+              --jq 'if .total_commits == (.commits | length) then [.commits[] | {message: .commit.message, parents: (.parents | length)}] else error("more commits than one answer holds") end' \
+              > "$RUNNER_TEMP/commits.json" || rm -f "${RUNNER_TEMP:?}/commits.json"
+          fi
+          python .github/scripts/prepare_release.py --dist dist --output release \
+            --previous "$RUNNER_TEMP/previous.json" --commits "$RUNNER_TEMP/commits.json"
+          cat release/NOTES.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload the assets
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-${{ steps.revision.outputs.revision }}
+          retention-days: 7
+          if-no-files-found: error
+          path: release/
+
+  publish:
+    needs: build
+    if: ${{ inputs.publish }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    defaults:
+      run:
+        shell: bash
+    env:
+      REVISION: ${{ needs.build.outputs.revision }}
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-${{ needs.build.outputs.revision }}
+          path: release
+
+      - name: Verify the checksums
+        working-directory: release
+        run: sha256sum --check SHA256SUMS.txt
+
+      - name: Publish the release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        # --target: without it gh tags the branch head at publish time, which is not the built commit
+        # when something was pushed during the build. The notes are the file written above; GitHub's
+        # generated notes are not added.
+        run: |
+          gh release create "v$REVISION" \
+            release/xiandai-yixue-cidian-yomitan.zip \
+            release/xinbian-shiyong-yixue-cidian-yomitan.zip \
+            release/index-xiandai-yixue-cidian.json \
+            release/index-xinbian-shiyong-yixue-cidian.json \
+            release/xiandai-yixue-cidian-conversion-report.json \
+            release/xinbian-shiyong-yixue-cidian-conversion-report.json \
+            release/SHA256SUMS.txt \
+            --target "$GITHUB_SHA" --title "v$REVISION" --latest \
+            --notes-file release/NOTES.md
