@@ -213,9 +213,9 @@ def build_dictionary(
         }
         write_json(stage / "index.json", index)
         (stage / "tag_bank_1.json").write_text(
-            json.dumps(TERM_TAGS, ensure_ascii=False) + "\n", encoding="utf-8"
+            json.dumps(TERM_TAGS, ensure_ascii=False) + "\n", encoding="utf-8", newline="\n"
         )
-        # LF whatever the checkout's line endings are, so the ZIP is the same on every machine
+        # LF whatever the checkout's line endings are: a Windows checkout has CRLF in this file
         (stage / "styles.css").write_bytes(styles.read_bytes().replace(b"\r\n", b"\n"))
 
         package_files: list[tuple[str, Path | bytes]] = [(file.name, file) for file in stage.iterdir()]

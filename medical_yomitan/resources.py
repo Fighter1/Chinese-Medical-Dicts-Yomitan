@@ -3,6 +3,8 @@ from __future__ import annotations
 import hashlib
 import io
 import posixpath
+import struct
+import zlib
 from dataclasses import dataclass, field
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
@@ -17,6 +19,36 @@ SUPPORTED = {".png", ".jpg", ".jpeg", ".gif", ".webp"}
 RASTERIZE = {".bmp", ".tif", ".tiff"}
 GLYPH_MAX_SIZE = 48
 FIGURE_MAX_WIDTH = 480
+
+
+_PNG_COLOUR_TYPES = {"L": 0, "RGB": 2, "LA": 4, "RGBA": 6}
+
+
+def encode_png(image: Image.Image) -> bytes:
+    """PNG bytes that depend only on the pixels and on Python's own zlib.
+
+    Pillow's PNG writer compresses with the zlib its wheel bundles, which is
+    not the same library on Windows and on Linux: the same pixels came out as
+    different bytes, and a file named after its content hash got another name.
+    Python's ``zlib`` module is what compresses the ZIP itself, so writing the
+    PNG with it adds no new way for two machines to differ.
+
+    8 bits per channel, no interlacing, every scanline with filter type 0, and
+    only the three chunks a PNG needs."""
+    if image.mode not in _PNG_COLOUR_TYPES:
+        has_alpha = "A" in image.getbands() or "transparency" in image.info
+        image = image.convert("RGBA" if has_alpha else "RGB")
+    width, height = image.size
+    stride = width * len(image.getbands())
+    pixels = image.tobytes()
+    scanlines = b"".join(b"\x00" + pixels[row * stride:(row + 1) * stride] for row in range(height))
+
+    def chunk(kind: bytes, payload: bytes) -> bytes:
+        return struct.pack(">I", len(payload)) + kind + payload + struct.pack(">I", zlib.crc32(kind + payload))
+
+    header = struct.pack(">IIBBBBB", width, height, 8, _PNG_COLOUR_TYPES[image.mode], 0, 0, 0)
+    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", header) + chunk(b"IDAT", zlib.compress(scanlines, 9))
+            + chunk(b"IEND", b""))
 
 
 def _is_glyph(suffix: str, size: tuple[int, int]) -> bool:
@@ -112,14 +144,10 @@ class ResourceCatalog:
                 alpha = luminance.point(lambda value: 255 - value)
                 rgba = Image.new("RGBA", size, (0, 0, 0, 255))
                 rgba.putalpha(alpha)
-                out = io.BytesIO()
-                rgba.save(out, format="PNG", optimize=True)
-                return out.getvalue(), ".png", size, True
+                return encode_png(rgba), ".png", size, True
             if suffix in SUPPORTED:
                 return raw, ".jpg" if suffix == ".jpeg" else suffix, size, False
-            out = io.BytesIO()
-            image.save(out, format="PNG", optimize=True)
-            return out.getvalue(), ".png", size, False
+            return encode_png(image), ".png", size, False
 
     def resolve(self, source: str) -> Resource:
         normalized = normalize_resource_path(source)

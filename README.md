@@ -59,8 +59,19 @@ unknown tags, private-use characters, unresolved references, samples). The
 revision is four dot-separated integers, `YYYY.MM.DD.N`, which is what Yomitan's
 updater compares number by number. A build nobody gives a revision gets the UTC
 date and `.0`, so a local build never outranks a release of the same day; set
-one with `--revision` or `MEDICAL_YOMITAN_REVISION`. The same inputs and
-revision always give a byte-identical ZIP.
+one with `--revision` or `MEDICAL_YOMITAN_REVISION`.
+
+The same inputs and revision give a byte-identical ZIP, on the same machine and
+across machines: a build on Windows (Python 3.12) and one on Linux (Python 3.14)
+are the same bytes. Three things make that so. Members are stored in sorted
+order with a fixed timestamp. Text members are written with LF whatever the
+platform or the checkout's line endings. And re-encoded images are written by
+the converter's own PNG encoder, which compresses with Python's `zlib`, not by
+Pillow, whose wheels bundle a different zlib on Windows and on Linux. What is
+left is Python's `zlib` itself, which also compresses the ZIP: a Python built
+against another zlib could produce other bytes for the same content.
+`tests/test_reproducibility.py` pins the encoder's output, so such a machine
+fails the tests instead of quietly building a different file.
 
 `validate` checks the index against Yomitan's schema, every term bank against the
 official term-bank v3 schema (via `fastjsonschema`), that every referenced image
@@ -318,7 +329,8 @@ The derived table is distributed under the same licence, and each dictionary's
   Two codes (U+E242 in 异食症, U+E477 in 真菌感染) could not be identified and
   render as `□` with a tooltip naming the code point.
 - Unicode is NFC-normalised; glossaries use `lang="zh-Hans"` and the generic
-  `sans-serif` font; the ZIP is byte-for-byte reproducible for the same inputs.
+  `sans-serif` font; the ZIP is byte-for-byte reproducible for the same inputs
+  (see Commands).
 
 ## Layout
 
@@ -331,7 +343,7 @@ medical_yomitan/
   cedict.py        the pinned CC-CEDICT readings table and its refresh
   golden.py        golden-word checks on a built ZIP
   release.py       revisions and release notes
-  resources.py     MDD image catalog, BMP→PNG, glyph/figure classification
+  resources.py     MDD image catalog, the PNG encoder, glyph/figure classification
   package.py       term-bank writer, deterministic ZIP
   validation.py    archive checks and schema validation
   dictionaries.py  per-dictionary identity, titles, update URLs

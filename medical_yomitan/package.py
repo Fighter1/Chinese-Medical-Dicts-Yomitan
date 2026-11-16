@@ -47,7 +47,9 @@ class TermBankWriter:
 
 
 def write_json(path: Path, value: Any) -> None:
-    path.write_text(json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+    """Indented JSON with LF line ends on every platform: what is written goes into the ZIP."""
+    path.write_text(json.dumps(value, ensure_ascii=False, indent=2, sort_keys=True) + "\n", encoding="utf-8",
+                    newline="\n")
 
 
 def _zip_info(name: str) -> zipfile.ZipInfo:
